@@ -10,7 +10,7 @@
 /coverage
 
 # typescripp in node 
-/.dist/
+/dist
 /out/
 
 # production
