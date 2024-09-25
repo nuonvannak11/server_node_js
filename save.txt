@@ -1,0 +1,24 @@
+ // const products = {
+      //   email: "vammodj@gmail.com",
+      //   product: {
+      //     "name": "Awesome Product",
+      //     "price": 100,
+      //   },
+      // };
+      // await createPayment(req, res, products);
+
+      
+// import { send_email } from "../utils/email/sendEmail";
+// import { sendTelegram } from "../utils/telegram/sendTelegram";
+// import CreatePay from "../utils/paypal/createPay";
+// const paymentInfo = {
+//   amount: "10.00",
+//   qty: 1,
+//   description: "Sample payment",
+//   name: "Sample Item",
+//   discount: "001",
+// };
+// await CreatePay.createPay(req, res, paymentInfo);
+
+
+
