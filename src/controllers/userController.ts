@@ -260,100 +260,90 @@ const deleteUser = async (req: Request, res: Response): Promise<void> => {
 };
 
 const updateUsers = async (req: Request, res: Response): Promise<void> => {
-  const { data } = req.body;
-  if (data) {
-    const encrypted_data = data.encrypted;
-    const token_id = data.tokenUser.token;
-    let data_token: string | JwtPayload;
-    try {
-      const deCoded = jwt.verify(token_id, secretKey) as JwtPayload;
-      data_token = deCoded;
-    } catch (error) {
+  const { userData, tokenUser } = req.body;
+  let data_token: string | JwtPayload;
+  try {
+    data_token = jwt.verify(tokenUser, secretKey) as JwtPayload;
+  } catch (error) {
+    res.status(200).json({
+      code: -1,
+      message: "Unauthorized Access",
+      error: error,
+    });
+    return;
+  }
+  const id_user = (data_token as JwtPayload).id;
+  const find_user = await User.findOne({
+    where: { id: id_user },
+  });
+  if (find_user) {
+    const { prepareData, errorData } = ConvertDataDecripts(userData);
+    if (errorData.length > 0) {
+      const entries = Object.entries(errorData[0]);
       res.status(200).json({
         code: -1,
-        message: "Unauthorized Access",
-        error: error,
+        message: `${entries[0][0]} # ${entries[0][1]}`,
       });
       return;
     }
-    const id_user = (data_token as JwtPayload).id;
-    const find_user = await User.findOne({
-      where: { id: id_user },
-    });
-    if (find_user) {
-      const { prepareData, errorData } = ConvertDataDecripts(encrypted_data);
-      if (errorData.length > 0) {
-        const entries = Object.entries(errorData[0]);
-        res.status(200).json({
-          code: -1,
-          message: `${entries[0][0]} # ${entries[0][1]}`,
-        });
-        return;
-      }
+    
+    if (prepareData && Array.isArray(prepareData) && prepareData.length > 0) {
+      const data = prepareData;
+      let convert: Record<string, any> = {};
+      data.forEach((item) => {
+        const key = Object.keys(item)[0];
+        convert[key] = item[key];
+      });
 
-      if (prepareData && Array.isArray(prepareData) && prepareData.length > 0) {
-        const data = prepareData;
-        let convert: Record<string, any> = {};
-        data.forEach((item) => {
-          const key = Object.keys(item)[0];
-          convert[key] = item[key];
-        });
+      const datetime = getCurrentDateTime();
+      const userData = find_user.get();
+      const dataprepared = PrepareDataBeforeUpdate(convert, userData);
 
-        const datetime = getCurrentDateTime();
-        const userData = find_user.get();
-        const dataprepared = PrepareDataBeforeUpdate(convert, userData);
+      try {
+        const [numberOfAffectedRows] = await User.update(
+          {
+            tel: dataprepared.tel,
+            age: dataprepared.age,
+            gender: dataprepared.gender,
+            address: dataprepared.address,
+            telegram: dataprepared.telegram,
+            bankacc: dataprepared.bankacc,
+            bankno: dataprepared.bankno,
+            salary: dataprepared.salary,
+            contact_us: dataprepared.contact_us,
+            image: dataprepared.image,
+            update_at: datetime,
+          },
+          { where: { id: id_user } }
+        );
 
-        try {
-          const [numberOfAffectedRows] = await User.update(
-            {
-              tel: dataprepared.tel,
-              age: dataprepared.age,
-              gender: dataprepared.gender,
-              address: dataprepared.address,
-              telegram: dataprepared.telegram,
-              bankacc: dataprepared.bankacc,
-              bankno: dataprepared.bankno,
-              salary: dataprepared.salary,
-              contact_us: dataprepared.contact_us,
-              image: dataprepared.image,
-              update_at: datetime,
-            },
-            { where: { id: id_user } }
-          );
-
-          if (numberOfAffectedRows === 0) {
-            res.status(200).json({
-              code: -1,
-              message: "Fail Update Information!",
-            });
-            return;
-          }
-
-          const newuserupdate = await User.findOne({
-            where: { id: id_user },
-          });
-
-          if (!newuserupdate) {
-            res.status(200).json({
-              code: -1,
-              message: "User Not Found!",
-            });
-            return;
-          }
-          const userDataNew = convertData(newuserupdate.get());
-          res.status(200).json({
-            code: 1,
-            message: "User updated successfully!",
-            datauser: userDataNew,
-          });
-        } catch (error) {
-          console.log(error);
+        if (numberOfAffectedRows === 0) {
           res.status(200).json({
             code: -1,
-            message: "Error updating user",
+            message: "Fail Update Information!",
           });
+          return;
         }
-      } else {
+
+        const newuserupdate = await User.findOne({
+          where: { id: id_user },
+        });
+
+        if (!newuserupdate) {
+          res.status(200).json({
+            code: -1,
+            message: "User Not Found!",
+          });
+          return;
+        }
+        const userDataNew = convertData(newuserupdate.get());
+        res.status(200).json({
+          code: 1,
+          message: "User updated successfully!",
+          datauser: userDataNew,
+        });
+      } catch (error) {
+        console.log(error);
         res.status(200).json({
           code: -1,
           message: "Error updating user",
@@ -362,15 +352,13 @@ const updateUsers = async (req: Request, res: Response): Promise<void> => {
     } else {
       res.status(200).json({
         code: -1,
-        message: "User Not Found!",
+        message: "Error updating user",
       });
-      return;
     }
   } else {
     res.status(200).json({
       code: -1,
-      message: "Faild Access",
-      error: "Errors Return Data",
+      message: "User Not Found!",
     });
     return;
   }

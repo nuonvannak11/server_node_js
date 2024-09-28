@@ -243,94 +243,83 @@ const deleteUser = async (req, res) => {
     }
 };
 const updateUsers = async (req, res) => {
-    const { data } = req.body;
-    if (data) {
-        const encrypted_data = data.encrypted;
-        const token_id = data.tokenUser.token;
-        let data_token;
-        try {
-            const deCoded = jsonwebtoken_1.default.verify(token_id, secretKey);
-            data_token = deCoded;
-        }
-        catch (error) {
+    const { userData, tokenUser } = req.body;
+    let data_token;
+    try {
+        data_token = jsonwebtoken_1.default.verify(tokenUser, secretKey);
+    }
+    catch (error) {
+        res.status(200).json({
+            code: -1,
+            message: "Unauthorized Access",
+            error: error,
+        });
+        return;
+    }
+    const id_user = data_token.id;
+    const find_user = await userModel_1.default.findOne({
+        where: { id: id_user },
+    });
+    if (find_user) {
+        const { prepareData, errorData } = (0, decriptsData_1.ConvertDataDecripts)(userData);
+        if (errorData.length > 0) {
+            const entries = Object.entries(errorData[0]);
             res.status(200).json({
                 code: -1,
-                message: "Unauthorized Access",
-                error: error,
+                message: `${entries[0][0]} # ${entries[0][1]}`,
             });
             return;
         }
-        const id_user = data_token.id;
-        const find_user = await userModel_1.default.findOne({
-            where: { id: id_user },
-        });
-        if (find_user) {
-            const { prepareData, errorData } = (0, decriptsData_1.ConvertDataDecripts)(encrypted_data);
-            if (errorData.length > 0) {
-                const entries = Object.entries(errorData[0]);
-                res.status(200).json({
-                    code: -1,
-                    message: `${entries[0][0]} # ${entries[0][1]}`,
-                });
-                return;
-            }
-            if (prepareData && Array.isArray(prepareData) && prepareData.length > 0) {
-                const data = prepareData;
-                let convert = {};
-                data.forEach((item) => {
-                    const key = Object.keys(item)[0];
-                    convert[key] = item[key];
-                });
-                const datetime = (0, dateUntil_1.getCurrentDateTime)();
-                const userData = find_user.get();
-                const dataprepared = (0, prepareData_1.PrepareDataBeforeUpdate)(convert, userData);
-                try {
-                    const [numberOfAffectedRows] = await userModel_1.default.update({
-                        tel: dataprepared.tel,
-                        age: dataprepared.age,
-                        gender: dataprepared.gender,
-                        address: dataprepared.address,
-                        telegram: dataprepared.telegram,
-                        bankacc: dataprepared.bankacc,
-                        bankno: dataprepared.bankno,
-                        salary: dataprepared.salary,
-                        contact_us: dataprepared.contact_us,
-                        image: dataprepared.image,
-                        update_at: datetime,
-                    }, { where: { id: id_user } });
-                    if (numberOfAffectedRows === 0) {
-                        res.status(200).json({
-                            code: -1,
-                            message: "Fail Update Information!",
-                        });
-                        return;
-                    }
-                    const newuserupdate = await userModel_1.default.findOne({
-                        where: { id: id_user },
-                    });
-                    if (!newuserupdate) {
-                        res.status(200).json({
-                            code: -1,
-                            message: "User Not Found!",
-                        });
-                        return;
-                    }
-                    const userDataNew = (0, convert_1.convertData)(newuserupdate.get());
-                    res.status(200).json({
-                        code: 1,
-                        message: "User updated successfully!",
-                        datauser: userDataNew,
-                    });
-                }
-                catch (error) {
-                    console.log(error);
+        if (prepareData && Array.isArray(prepareData) && prepareData.length > 0) {
+            const data = prepareData;
+            let convert = {};
+            data.forEach((item) => {
+                const key = Object.keys(item)[0];
+                convert[key] = item[key];
+            });
+            const datetime = (0, dateUntil_1.getCurrentDateTime)();
+            const userData = find_user.get();
+            const dataprepared = (0, prepareData_1.PrepareDataBeforeUpdate)(convert, userData);
+            try {
+                const [numberOfAffectedRows] = await userModel_1.default.update({
+                    tel: dataprepared.tel,
+                    age: dataprepared.age,
+                    gender: dataprepared.gender,
+                    address: dataprepared.address,
+                    telegram: dataprepared.telegram,
+                    bankacc: dataprepared.bankacc,
+                    bankno: dataprepared.bankno,
+                    salary: dataprepared.salary,
+                    contact_us: dataprepared.contact_us,
+                    image: dataprepared.image,
+                    update_at: datetime,
+                }, { where: { id: id_user } });
+                if (numberOfAffectedRows === 0) {
                     res.status(200).json({
                         code: -1,
-                        message: "Error updating user",
+                        message: "Fail Update Information!",
                     });
+                    return;
                 }
+                const newuserupdate = await userModel_1.default.findOne({
+                    where: { id: id_user },
+                });
+                if (!newuserupdate) {
+                    res.status(200).json({
+                        code: -1,
+                        message: "User Not Found!",
+                    });
+                    return;
+                }
+                const userDataNew = (0, convert_1.convertData)(newuserupdate.get());
+                res.status(200).json({
+                    code: 1,
+                    message: "User updated successfully!",
+                    datauser: userDataNew,
+                });
             }
-            else {
+            catch (error) {
+                console.log(error);
                 res.status(200).json({
                     code: -1,
                     message: "Error updating user",
@@ -340,16 +329,14 @@ const updateUsers = async (req, res) => {
         else {
             res.status(200).json({
                 code: -1,
-                message: "User Not Found!",
+                message: "Error updating user",
             });
-            return;
         }
     }
     else {
         res.status(200).json({
             code: -1,
-            message: "Faild Access",
-            error: "Errors Return Data",
+            message: "User Not Found!",
         });
         return;
     }
