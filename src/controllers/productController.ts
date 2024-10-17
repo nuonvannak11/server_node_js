@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { empty } from "../utils/helperFunctions";
 import Product from "../models/productModel";
 import ProductItems from "../models/productItemsModel";
 import PrepareItems from "../helper/product/prepareItems";
@@ -19,14 +20,14 @@ const getOneProduct = async (req: Request, res: Response): Promise<void> => {
   let id = req.body.id;
   let parsedId;
 
-  if (typeof id === "string" && (!/^\d+$/.test(id) || (id !== "0" && id.startsWith("0")))) {
-    res.status(200).json({ message: "Invalid ID", code: "-1", id: id });
+  if (empty(id)) {
+    res.status(200).json({
+      message: "Product ID not found",
+      code: -1,
+    });
     return;
-  } else if (typeof id === "number" && id === 0) {
-    parsedId = id;
-  } else {
-    parsedId = parseFloat(id);
   }
+  parsedId = parseInt(id);
 
   try {
     const productData = await Product.findOne({
@@ -42,25 +43,26 @@ const getOneProduct = async (req: Request, res: Response): Promise<void> => {
       where: { pro_id: parsedId },
     });
 
-    if (!productItem) {
-      res.status(200).json({ message: "Items not found", code: "-1" });
-      return;
-    }
+    let product_data = [];
+    let product_item = [];
 
-    const dataReturnItem = PrepareItems(productItem.get());
-    const dataProduct = productData.get();
-    const datafull = {
-      product: dataProduct,
-      item: dataReturnItem,
-    };
+    if (productData) {
+      product_data = productData.get();
+    }
+    if (productItem) {
+      product_item = PrepareItems(productItem.get());
+    }
 
     res.status(200).json({
       message: "success",
-      code: "1",
-      data: datafull,
+      code: 1,
+      data: {
+        product: product_data,
+        item: product_item,
+      },
     });
   } catch (error) {
-    res.status(200).json({ message: error, code: "-1" });
+    res.status(200).json({ message: error, code: -1 });
   }
 };
 

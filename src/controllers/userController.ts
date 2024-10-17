@@ -2,9 +2,19 @@ import { Request, Response, NextFunction } from "express";
 import User from "../models/userModel";
 import UserCode from "../models/userModelCode";
 import UserColor from "../models/userModelColor";
+import UserOrder from "../models/userModelOrder";
 import { io } from "../helper/socket";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { decryptPassword } from "../utils/helperFunctions";
+import {
+  check_length,
+  cv_num,
+  cv_str,
+  decryptPassword,
+  empty,
+  isNumberOnly,
+  isTextOnly,
+  lower_text,
+} from "../utils/helperFunctions";
 import { ConvertDataDecripts } from "../helper/decripts/decriptsData";
 import { convertData } from "../helper/readData/convert";
 import { convertDecript } from "../helper/returnDecript/readDecript";
@@ -15,7 +25,8 @@ import { SendUserCode } from "../utils/message/email/sendEmail";
 import { GetAddressTimeZone } from "../helper/glable/post/address";
 import { slideData } from "../helper/readData/slideData";
 import { config } from "dotenv";
-import { exit } from "process";
+import { validateCardDetails } from "../middlewares/users/userMiddleware";
+import { create_order } from "../databases/create/user_create";
 
 config();
 
@@ -286,7 +297,7 @@ const updateUsers = async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
-    
+
     if (prepareData && Array.isArray(prepareData) && prepareData.length > 0) {
       const data = prepareData;
       let convert: Record<string, any> = {};
@@ -681,6 +692,95 @@ const getColor = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+const UserOrderData = async (req: Request, res: Response): Promise<void> => {
+  const { formdata } = req.body;
+  const { prepareData, errorData } = ConvertDataDecripts(formdata);
+  if (!empty(errorData)) {
+    const entries = Object.entries(errorData[0]);
+    res.status(200).json({
+      code: -1,
+      message: `${entries[0][0]} # ${entries[0][1]}`,
+    });
+    return;
+  }
+
+  if (!empty(prepareData)) {
+    const prepareDataObj = prepareData.reduce((acc, item) => {
+      return { ...acc, ...item };
+    }, {});
+    
+    const userID = prepareDataObj.user_id;
+    const productID = prepareDataObj.product_id;
+    const productQTY = prepareDataObj.product_qty;
+    const productPrice = prepareDataObj.product_amount;
+    const payType = prepareDataObj.pay_type;
+    const cardName = prepareDataObj.card_name;
+    const cardNumber = prepareDataObj.card_number;
+    const cardEXP = prepareDataObj.card_exp;
+    const cardCVV = prepareDataObj.card_cvv;
+    const product_discount = 34;
+
+    if (empty(userID)) {
+      res.status(200).json({
+        code: -6,
+        message: "User Id not found!",
+      });
+      return;
+    }
+
+    if (empty(productID)) {
+      res.status(200).json({
+        code: -7,
+        message: "Product Id not found!",
+      });
+      return;
+    }
+
+    if (lower_text(payType) === "stripe") {
+      validateCardDetails(cardName, cardNumber, cardEXP, cardCVV, res);
+    }
+
+    // console.log(userID);
+    // console.log(payType);
+    // console.log(productID);
+    // console.log(productQTY);
+    // console.log(cardName);
+    // console.log(cardNumber);
+    // console.log(cardEXP);
+    // console.log(cardCVV);
+    // console.log(productPrice);
+
+    const respond = await create_order(
+      cv_str(userID),
+      cv_str(productID),
+      cv_str(productQTY),
+      cv_str(productPrice),
+      cv_str(product_discount),
+      cv_str(payType),
+      cv_str(getCurrentDateTime())
+    );
+
+    if (respond.code === 1) {
+      res.status(200).json({
+        code: 1,
+        message: "Order created successfully",
+      });
+      return;
+    } else {
+      res.status(200).json({
+        code: -1,
+        message: "Failed to create order",
+      });
+      return;
+    }
+  } else {
+    res.status(200).json({
+      code: -1,
+      message: "Check Out Fail",
+    });
+  }
+};
+
 const UserController = {
   getAllUsers,
   loginUser,
@@ -690,6 +790,7 @@ const UserController = {
   updateUsers,
   restoreUser,
   getColor,
+  UserOrderData,
 };
 
 export default UserController;

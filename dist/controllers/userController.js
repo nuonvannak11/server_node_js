@@ -17,6 +17,8 @@ const prepareData_1 = require("../helper/readData/prepareData");
 const random_1 = require("../helper/randomNumber/random");
 const sendEmail_1 = require("../utils/message/email/sendEmail");
 const dotenv_1 = require("dotenv");
+const userMiddleware_1 = require("../middlewares/users/userMiddleware");
+const user_create_1 = require("../databases/create/user_create");
 (0, dotenv_1.config)();
 const secretKey = process.env.JWT_SECRET_KEY || "";
 const getAllUsers = async (req, res) => {
@@ -625,6 +627,80 @@ const getColor = async (req, res) => {
         return;
     }
 };
+const UserOrderData = async (req, res) => {
+    const { formdata } = req.body;
+    const { prepareData, errorData } = (0, decriptsData_1.ConvertDataDecripts)(formdata);
+    if (!(0, helperFunctions_1.empty)(errorData)) {
+        const entries = Object.entries(errorData[0]);
+        res.status(200).json({
+            code: -1,
+            message: `${entries[0][0]} # ${entries[0][1]}`,
+        });
+        return;
+    }
+    if (!(0, helperFunctions_1.empty)(prepareData)) {
+        const prepareDataObj = prepareData.reduce((acc, item) => {
+            return { ...acc, ...item };
+        }, {});
+        const userID = prepareDataObj.user_id;
+        const productID = prepareDataObj.product_id;
+        const productQTY = prepareDataObj.product_qty;
+        const productPrice = prepareDataObj.product_amount;
+        const payType = prepareDataObj.pay_type;
+        const cardName = prepareDataObj.card_name;
+        const cardNumber = prepareDataObj.card_number;
+        const cardEXP = prepareDataObj.card_exp;
+        const cardCVV = prepareDataObj.card_cvv;
+        const product_discount = 34;
+        if ((0, helperFunctions_1.empty)(userID)) {
+            res.status(200).json({
+                code: -6,
+                message: "User Id not found!",
+            });
+            return;
+        }
+        if ((0, helperFunctions_1.empty)(productID)) {
+            res.status(200).json({
+                code: -7,
+                message: "Product Id not found!",
+            });
+            return;
+        }
+        if ((0, helperFunctions_1.lower_text)(payType) === "stripe") {
+            (0, userMiddleware_1.validateCardDetails)(cardName, cardNumber, cardEXP, cardCVV, res);
+        }
+        // console.log(userID);
+        // console.log(payType);
+        // console.log(productID);
+        // console.log(productQTY);
+        // console.log(cardName);
+        // console.log(cardNumber);
+        // console.log(cardEXP);
+        // console.log(cardCVV);
+        // console.log(productPrice);
+        const respond = await (0, user_create_1.create_order)((0, helperFunctions_1.cv_str)(userID), (0, helperFunctions_1.cv_str)(productID), (0, helperFunctions_1.cv_str)(productQTY), (0, helperFunctions_1.cv_str)(productPrice), (0, helperFunctions_1.cv_str)(product_discount), (0, helperFunctions_1.cv_str)(payType), (0, helperFunctions_1.cv_str)((0, dateUntil_1.getCurrentDateTime)()));
+        if (respond.code === 1) {
+            res.status(200).json({
+                code: 1,
+                message: "Order created successfully",
+            });
+            return;
+        }
+        else {
+            res.status(200).json({
+                code: -1,
+                message: "Failed to create order",
+            });
+            return;
+        }
+    }
+    else {
+        res.status(200).json({
+            code: -1,
+            message: "Check Out Fail",
+        });
+    }
+};
 const UserController = {
     getAllUsers,
     loginUser,
@@ -634,5 +710,6 @@ const UserController = {
     updateUsers,
     restoreUser,
     getColor,
+    UserOrderData,
 };
 exports.default = UserController;

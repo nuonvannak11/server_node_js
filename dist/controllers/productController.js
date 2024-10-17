@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const helperFunctions_1 = require("../utils/helperFunctions");
 const productModel_1 = __importDefault(require("../models/productModel"));
 const productItemsModel_1 = __importDefault(require("../models/productItemsModel"));
 const prepareItems_1 = __importDefault(require("../helper/product/prepareItems"));
@@ -21,16 +22,14 @@ const getAllProducts = async (req, res) => {
 const getOneProduct = async (req, res) => {
     let id = req.body.id;
     let parsedId;
-    if (typeof id === "string" && (!/^\d+$/.test(id) || (id !== "0" && id.startsWith("0")))) {
-        res.status(200).json({ message: "Invalid ID", code: "-1", id: id });
+    if ((0, helperFunctions_1.empty)(id)) {
+        res.status(200).json({
+            message: "Product ID not found",
+            code: -1,
+        });
         return;
     }
-    else if (typeof id === "number" && id === 0) {
-        parsedId = id;
-    }
-    else {
-        parsedId = parseFloat(id);
-    }
+    parsedId = parseInt(id);
     try {
         const productData = await productModel_1.default.findOne({
             where: { id: parsedId },
@@ -42,24 +41,25 @@ const getOneProduct = async (req, res) => {
         const productItem = await productItemsModel_1.default.findOne({
             where: { pro_id: parsedId },
         });
-        if (!productItem) {
-            res.status(200).json({ message: "Items not found", code: "-1" });
-            return;
+        let product_data = [];
+        let product_item = [];
+        if (productData) {
+            product_data = productData.get();
         }
-        const dataReturnItem = (0, prepareItems_1.default)(productItem.get());
-        const dataProduct = productData.get();
-        const datafull = {
-            product: dataProduct,
-            item: dataReturnItem,
-        };
+        if (productItem) {
+            product_item = (0, prepareItems_1.default)(productItem.get());
+        }
         res.status(200).json({
             message: "success",
-            code: "1",
-            data: datafull,
+            code: 1,
+            data: {
+                product: product_data,
+                item: product_item,
+            },
         });
     }
     catch (error) {
-        res.status(200).json({ message: error, code: "-1" });
+        res.status(200).json({ message: error, code: -1 });
     }
 };
 const createProduct = async (req, res) => {

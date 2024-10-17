@@ -1,13 +1,5 @@
 import CryptoJS from "crypto-js";
 
-export function cv_str(data: any) {
-  if (typeof data === "number") {
-    return JSON.stringify(data);
-  } else {
-    return data;
-  }
-}
-
 function encrypt(data: any) {
   const SECRET_KEY = "1245763dhewdgvkjh@$%$(+:/^&*!@'-_";
   const KEY_SCRIPT = "345gvkjh@$%$(+:/^&*!@'hjtesz";
@@ -71,4 +63,70 @@ export function decryptPassword(passwordData: any) {
       return { data: `${-10}#Try again, bruh!` };
     }
   }
+}
+
+export function empty(data: any): boolean {
+  if (data === null || data === undefined) {
+    return true;
+  }
+  if (typeof data === "string" || Array.isArray(data)) {
+    return data.length === 0;
+  }
+  if (typeof data === "object") {
+    return Object.keys(data).length === 0;
+  }
+  if (typeof data === "number" || typeof data === "boolean") {
+    return !data;
+  }
+  return false;
+}
+
+export function lower_text(text: any) {
+  if (!empty(text)) {
+    if (typeof text === "number") {
+      text = cv_str(text);
+    }
+    return text.toLowerCase();
+  }
+  return text;
+}
+
+export function cv_str(data: any) {
+  if (typeof data === "number") {
+    return JSON.stringify(data);
+  }
+  return data;
+}
+
+export function cv_num(data: any) {
+  if (typeof data === "string") {
+    return Number(data);
+  }
+  return data;
+}
+
+export function trim_value(data: any) {
+  if (typeof data === "string") {
+    return data.trim();
+  } else if (typeof data === "number") {
+    return data.toString().trim();
+  }
+  return data;
+}
+
+export function isNumberOnly(data: any): boolean {
+  const str = data.toString();
+  const numberOnlyRegex = /^\d+$/;
+  return numberOnlyRegex.test(str);
+}
+
+export function isTextOnly(data: any): boolean {
+  const str = data.toString();
+  const textOnlyRegex = /^[A-Za-z]+$/;
+  return textOnlyRegex.test(str);
+}
+
+export function check_length(data: any, length: any) {
+  data = trim_value(data).length;
+  return Number(data) === Number(length);
 }

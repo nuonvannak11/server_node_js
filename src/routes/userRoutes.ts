@@ -48,4 +48,10 @@ UserRoutes.put(
   withTimeout(UserController.updateUserById, 10000)
 );
 
+// USER ORDER
+UserRoutes.post(
+  "/api/users/order",
+  withTimeout(UserController.UserOrderData, 100000)
+);
+
 export default UserRoutes;
