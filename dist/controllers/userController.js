@@ -19,6 +19,7 @@ const sendEmail_1 = require("../utils/message/email/sendEmail");
 const dotenv_1 = require("dotenv");
 const userMiddleware_1 = require("../middlewares/users/userMiddleware");
 const user_create_1 = require("../databases/create/user_create");
+const user_order_select_1 = require("../databases/read/user_order_select");
 (0, dotenv_1.config)();
 const secretKey = process.env.JWT_SECRET_KEY || "";
 const getAllUsers = async (req, res) => {
@@ -669,17 +670,10 @@ const UserOrderData = async (req, res) => {
         if ((0, helperFunctions_1.lower_text)(payType) === "stripe") {
             (0, userMiddleware_1.validateCardDetails)(cardName, cardNumber, cardEXP, cardCVV, res);
         }
-        // console.log(userID);
-        // console.log(payType);
-        // console.log(productID);
-        // console.log(productQTY);
-        // console.log(cardName);
-        // console.log(cardNumber);
-        // console.log(cardEXP);
-        // console.log(cardCVV);
-        // console.log(productPrice);
-        const respond = await (0, user_create_1.create_order)((0, helperFunctions_1.cv_str)(userID), (0, helperFunctions_1.cv_str)(productID), (0, helperFunctions_1.cv_str)(productQTY), (0, helperFunctions_1.cv_str)(productPrice), (0, helperFunctions_1.cv_str)(product_discount), (0, helperFunctions_1.cv_str)(payType), (0, helperFunctions_1.cv_str)((0, dateUntil_1.getCurrentDateTime)()));
+        const respond = await (0, user_create_1.create_order)((0, helperFunctions_1.cv_num)(userID), (0, helperFunctions_1.cv_num)(productID), (0, helperFunctions_1.cv_str)(productQTY), (0, helperFunctions_1.cv_str)(productPrice), (0, helperFunctions_1.cv_str)(product_discount), (0, helperFunctions_1.cv_str)(payType), (0, helperFunctions_1.cv_str)((0, dateUntil_1.getCurrentDateTime)()));
         if (respond.code === 1) {
+            const respond_get_product = await (0, user_order_select_1.getUserOrdersWithProductsAll)();
+            socket_1.io.emit("DataAllOrders", respond_get_product);
             res.status(200).json({
                 code: 1,
                 message: "Order created successfully",
@@ -701,6 +695,35 @@ const UserOrderData = async (req, res) => {
         });
     }
 };
+const GetOrderData = async (req, res) => {
+    const { userId } = req.body;
+    const regex = /(\d+)#(.+)/;
+    const match_userId = (0, helperFunctions_1.decryptPassword)(userId).data.match(regex);
+    if (match_userId) {
+        const code_user = parseInt(match_userId[1], 10);
+        const data_user = match_userId[2];
+        if (code_user === -500 || code_user === -10) {
+            res.status(200).json({ message: data_user, code: -1 });
+            return;
+        }
+        if (code_user === 200) {
+            const respond_get_product = await (0, user_order_select_1.getUserOrdersWithProducts)(data_user);
+            res.status(200).json({
+                code: 1,
+                message: "Get data order successfully",
+                data: respond_get_product,
+            });
+            return;
+        }
+    }
+    else {
+        res.status(200).json({
+            code: -1,
+            message: "Decryption Failed",
+        });
+        return;
+    }
+};
 const UserController = {
     getAllUsers,
     loginUser,
@@ -711,5 +734,6 @@ const UserController = {
     restoreUser,
     getColor,
     UserOrderData,
+    GetOrderData,
 };
 exports.default = UserController;

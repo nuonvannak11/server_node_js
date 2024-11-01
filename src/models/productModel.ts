@@ -1,22 +1,7 @@
 import { Model, DataTypes } from "sequelize";
 import sequelize from "../config/Sequelize";
 
-class Product extends Model {
-  public id!: number;
-  public product_name!: string;
-  public product_price!: string;
-  public qty!: number;
-  public description!: string;
-  public product_from!: string;
-  public product_color!: string;
-  public product_image!: string;
-  public product_create!: string;
-  public warranty!: string;
-  public category!: string;
-  public image_footer_first!: string;
-  public image_footer_second!: string;
-  public image_footer_third!: string;
-}
+class Product extends Model {}
 
 Product.init(
   {
@@ -69,8 +54,15 @@ Product.init(
   },
   {
     sequelize,
-    modelName: "Tb_product",
+    modelName: "Product",
+    tableName: "tb_products",
     timestamps: false,
+    indexes: [
+      {
+        unique: true,
+        fields: ["id"],
+      },
+    ],
   }
 );
 

@@ -27,6 +27,10 @@ import { slideData } from "../helper/readData/slideData";
 import { config } from "dotenv";
 import { validateCardDetails } from "../middlewares/users/userMiddleware";
 import { create_order } from "../databases/create/user_create";
+import {
+  getUserOrdersWithProducts,
+  getUserOrdersWithProductsAll,
+} from "../databases/read/user_order_select";
 
 config();
 
@@ -708,7 +712,7 @@ const UserOrderData = async (req: Request, res: Response): Promise<void> => {
     const prepareDataObj = prepareData.reduce((acc, item) => {
       return { ...acc, ...item };
     }, {});
-    
+
     const userID = prepareDataObj.user_id;
     const productID = prepareDataObj.product_id;
     const productQTY = prepareDataObj.product_qty;
@@ -740,19 +744,9 @@ const UserOrderData = async (req: Request, res: Response): Promise<void> => {
       validateCardDetails(cardName, cardNumber, cardEXP, cardCVV, res);
     }
 
-    // console.log(userID);
-    // console.log(payType);
-    // console.log(productID);
-    // console.log(productQTY);
-    // console.log(cardName);
-    // console.log(cardNumber);
-    // console.log(cardEXP);
-    // console.log(cardCVV);
-    // console.log(productPrice);
-
     const respond = await create_order(
-      cv_str(userID),
-      cv_str(productID),
+      cv_num(userID),
+      cv_num(productID),
       cv_str(productQTY),
       cv_str(productPrice),
       cv_str(product_discount),
@@ -761,6 +755,8 @@ const UserOrderData = async (req: Request, res: Response): Promise<void> => {
     );
 
     if (respond.code === 1) {
+      const respond_get_product = await getUserOrdersWithProductsAll();
+      io.emit("DataAllOrders", respond_get_product);
       res.status(200).json({
         code: 1,
         message: "Order created successfully",
@@ -781,6 +777,36 @@ const UserOrderData = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+const GetOrderData = async (req: Request, res: Response): Promise<void> => {
+  const { userId } = req.body;
+  const regex = /(\d+)#(.+)/;
+  const match_userId = decryptPassword(userId).data.match(regex);
+
+  if (match_userId) {
+    const code_user = parseInt(match_userId[1], 10);
+    const data_user = match_userId[2];
+    if (code_user === -500 || code_user === -10) {
+      res.status(200).json({ message: data_user, code: -1 });
+      return;
+    }
+    if (code_user === 200) {
+      const respond_get_product = await getUserOrdersWithProducts(data_user);
+      res.status(200).json({
+        code: 1,
+        message: "Get data order successfully",
+        data: respond_get_product,
+      });
+      return;
+    }
+  } else {
+    res.status(200).json({
+      code: -1,
+      message: "Decryption Failed",
+    });
+    return;
+  }
+};
+
 const UserController = {
   getAllUsers,
   loginUser,
@@ -791,6 +817,7 @@ const UserController = {
   restoreUser,
   getColor,
   UserOrderData,
+  GetOrderData,
 };
 
 export default UserController;

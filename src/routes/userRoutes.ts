@@ -54,4 +54,9 @@ UserRoutes.post(
   withTimeout(UserController.UserOrderData, 100000)
 );
 
+UserRoutes.post(
+  "/api/users/get_order",
+  withTimeout(UserController.GetOrderData, 100000)
+);
+
 export default UserRoutes;

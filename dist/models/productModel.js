@@ -6,20 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const sequelize_1 = require("sequelize");
 const Sequelize_1 = __importDefault(require("../config/Sequelize"));
 class Product extends sequelize_1.Model {
-    id;
-    product_name;
-    product_price;
-    qty;
-    description;
-    product_from;
-    product_color;
-    product_image;
-    product_create;
-    warranty;
-    category;
-    image_footer_first;
-    image_footer_second;
-    image_footer_third;
 }
 Product.init({
     id: {
@@ -70,7 +56,14 @@ Product.init({
     },
 }, {
     sequelize: Sequelize_1.default,
-    modelName: "Tb_product",
+    modelName: "Product",
+    tableName: "tb_products",
     timestamps: false,
+    indexes: [
+        {
+            unique: true,
+            fields: ["id"],
+        },
+    ],
 });
 exports.default = Product;

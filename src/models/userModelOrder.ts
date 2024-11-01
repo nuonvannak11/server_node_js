@@ -1,5 +1,6 @@
 import { Model, DataTypes } from "sequelize";
 import sequelize from "../config/Sequelize";
+import Product from "./productModel";
 
 class UserOrder extends Model {}
 
@@ -11,11 +12,11 @@ UserOrder.init(
       primaryKey: true,
     },
     user_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     product_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     qty: {
@@ -31,6 +32,14 @@ UserOrder.init(
       allowNull: true,
     },
     pay_type: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    delivery: {
       type: DataTypes.STRING,
       allowNull: true,
     },

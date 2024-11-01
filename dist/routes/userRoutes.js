@@ -25,4 +25,5 @@ UserRoutes.post("/api/users/get_color/", (0, setTime_1.withTimeout)(userControll
 UserRoutes.put("/api/users/update_byid/:id", (0, setTime_1.withTimeout)(userController_1.default.updateUserById, 10000));
 // USER ORDER
 UserRoutes.post("/api/users/order", (0, setTime_1.withTimeout)(userController_1.default.UserOrderData, 100000));
+UserRoutes.post("/api/users/get_order", (0, setTime_1.withTimeout)(userController_1.default.GetOrderData, 100000));
 exports.default = UserRoutes;

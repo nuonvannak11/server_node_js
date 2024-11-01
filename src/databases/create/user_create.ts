@@ -1,9 +1,9 @@
 import UserOrder from "../../models/userModelOrder";
-import { cv_str } from "../../utils/helperFunctions";
+import { cv_num, cv_str } from "../../utils/helperFunctions";
 
 export async function create_order(
-  userID: string,
-  productID: string,
+  userID: number,
+  productID: number,
   productQTY: string,
   productPrice: string,
   product_discount: string,
@@ -12,12 +12,14 @@ export async function create_order(
 ) {
   try {
     const createOrder = await UserOrder.create({
-      user_id: cv_str(userID),
-      product_id: cv_str(productID),
+      user_id: cv_num(userID),
+      product_id: cv_num(productID),
       qty: cv_str(productQTY),
       amount: cv_str(productPrice),
       discount: cv_str(product_discount),
       pay_type: cv_str(payType),
+      status: cv_str("pending"),
+      delivery: cv_str("on factory"),
       create_at: cv_str(datetime),
       update_at: cv_str(datetime),
     });
